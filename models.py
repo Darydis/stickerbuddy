@@ -5,8 +5,6 @@ from typing import List, Dict
 class Pizza:
     id: int
     name: str
-    ingredients: str = ''
-    price: float = 0.0
 
 @dataclass
 class BotState:

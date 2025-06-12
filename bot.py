@@ -3,7 +3,7 @@ import logging
 from dotenv import load_dotenv
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
-from . import handlers
+import handlers
 
 
 def main() -> None:
