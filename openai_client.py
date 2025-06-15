@@ -1,8 +1,12 @@
 import asyncio
+import base64
 import os
 
 import httpx
 import openai
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Prepare OpenAI client with proxy
 api_key = os.getenv("OPENAI_API_KEY")
@@ -17,7 +21,10 @@ openai_client = openai.OpenAI(api_key=api_key, http_client=ihttpx)
 
 
 # --- OpenAI query ---
-async def ask_chatgpt(img_url):
+async def ask_chatgpt(image_bytes):
+    b64 = base64.b64encode(image_bytes).decode()
+    data_url = f"data:image/jpeg;base64,{b64}"
+
     prompt = (
         "Распознай на изображении меню названия пицц. "
         "Верни JSON-массив объектов {name: str}."
@@ -29,7 +36,7 @@ async def ask_chatgpt(img_url):
             "content": [
                 {
                     "type": "image_url",
-                    "image_url": {"url": img_url}
+                    "image_url": {"url": data_url}
                 }
 
             ]
@@ -39,7 +46,7 @@ async def ask_chatgpt(img_url):
         openai_client.chat.completions.create,
         model="gpt-4.1-nano",
         messages=messages,
-        max_tokens=150,
+        max_tokens=300,
         temperature=0,
         top_p=1
     )
