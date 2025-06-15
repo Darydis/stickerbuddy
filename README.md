@@ -3,7 +3,7 @@
 Telegram bot to select pizzas based on group ratings.
 
 ## Features
-- Upload a photo of a menu to extract pizza names and prices using OCR (pytesseract).
+- Upload a photo of a menu. The bot sends it to ChatGPT to extract pizza names and prices.
 - Participants rate pizzas from 0 to 10 or use `/veto` to strongly reject.
 - The bot aggregates scores with veto logic: veto equals score 0, and a pizza is excluded if more than half the participants use veto.
 - Use `/result K` to see the top `K` pizzas with highest sum score.
@@ -20,8 +20,3 @@ Telegram bot to select pizzas based on group ratings.
    ```
 
 The source code is split into modules under the `pizzabot` package for easier maintenance.
-
-OCR requires the `tesseract` binary. On Debian/Ubuntu:
-```bash
-sudo apt-get install tesseract-ocr
-```

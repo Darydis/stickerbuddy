@@ -1,5 +1,6 @@
 from typing import Iterable
-from .models import Pizza, BotState
+
+from models import BotState
 
 
 def aggregate_results(state: BotState, k: int) -> str:
