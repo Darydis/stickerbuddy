@@ -8,7 +8,7 @@ if [ -f requirements.txt ]; then
 fi
 
 # 2. Проверяем переменные окружения
-: "${TELEGRAM_TOKEN:?не задано TELEGRAM_TOKEN}"
+: "${BOT_TOKEN:?не задано BOT_TOKEN}"
 : "${OPENAI_API_KEY:?не задан OPENAI_API_KEY}"
 
 # 3. Запускаем бота
