@@ -10,29 +10,57 @@ logger = logging.getLogger(__name__)
 state = BotState()
 
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Отправьте изображение меню для создания голосования. "
-        "Бот пришлёт номер, который можно переслать друзьям. "
-        "Они могут использовать /join <id> для голосования."
-    )
-
-
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # 1. Получаем файл и URL/bytes
     photo = update.message.photo[-1]
     file = await context.bot.get_file(photo.file_id)
     img_bytes = await file.download_as_bytearray()
 
-    menu = await parse_menu(img_bytes)
-    poll_id = state.next_poll_id
-    state.next_poll_id += 1
-    state.polls[poll_id] = Poll(id=poll_id, menu=menu)
-    lines = [f"{p.id}. {p.name}" for p in menu]
+    photos = context.user_data.setdefault("pending_photos", [])
+    photos.append(img_bytes)
+    count = len(photos)
+
     await update.message.reply_text(
-        f"Меню распознано. Номер голосования {poll_id}.\n" + "\n".join(lines)
+        f"Фото #{count} получено. Отправьте ещё или нажмите «Готово» ниже.",
+        reply_markup=InlineKeyboardMarkup(
+            [[InlineKeyboardButton("Готово", callback_data="done")]]
+        ),
     )
 
+async def done_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    photos = context.user_data.pop("pending_photos", None)
+    if not photos:
+        await query.message.reply_text(
+            "Нет загруженных фото. Сначала отправьте изображения меню."
+        )
+        return
+
+    all_items = []
+    for img in photos:
+        try:
+            items = await parse_menu(img)
+            all_items.extend(items)
+        except Exception as e:
+            logger.exception("Ошибка при parse_menu:")
+            await query.message.reply_text(f"Не удалось распознать одно фото: {e}")
+            return
+
+    # перенумеруем пункты
+    for idx, item in enumerate(all_items, start=1):
+        item.id = idx
+
+    # создаём опрос
+    poll_id = state.next_poll_id
+    state.next_poll_id += 1
+    state.polls[poll_id] = Poll(id=poll_id, menu=all_items)
+
+    lines = [f"{p.id}. {p.name}" for p in all_items]
+    await query.message.reply_text(
+        f"Меню распознано. Номер голосования {poll_id}.\n" + "\n".join(lines)
+    )
 
 async def join(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) != 1:
@@ -120,3 +148,11 @@ async def result(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=chat_id, text=summary)
     if update.effective_chat.id not in poll.participants:
         await update.message.reply_text(summary)
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Отправьте изображение меню для создания голосования. "
+        "Вы можете отправить несколько снимков по очереди. "
+        "Когда всё готово — нажмите кнопку «Готово»."
+    )

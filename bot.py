@@ -15,6 +15,10 @@ def main() -> None:
 
     app = Application.builder().token(bot_token).build()
     app.add_handler(CommandHandler('start', handlers.start))
+    # ОБРАБОТЧИК ДЛЯ КНОПКИ "Готово"
+    app.add_handler(
+        CallbackQueryHandler(handlers.done_callback, pattern=r'^done$')
+    )
     app.add_handler(MessageHandler(filters.PHOTO, handlers.handle_photo))
     app.add_handler(CommandHandler('join', handlers.join))
     app.add_handler(CommandHandler('result', handlers.result))
