@@ -1,5 +1,5 @@
 import logging
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
 
 from aggregation import aggregate_results
@@ -8,6 +8,8 @@ from models import BotState, Poll
 
 logger = logging.getLogger(__name__)
 state = BotState()
+
+MENU_KB = ReplyKeyboardMarkup([['Присоединиться']], resize_keyboard=True)
 
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -165,8 +167,37 @@ async def result(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Главное меню бота
     await update.message.reply_text(
-        "Отправьте изображение меню для создания голосования. "
+        "Добро пожаловать! Отправьте изображение меню для создания голосования. "
         "Вы можете отправить несколько снимков по очереди. "
-        "Когда всё готово — нажмите кнопку «Готово»."
+        "Когда всё готово — нажмите кнопку «Готово». Также вы можете присоединиться к существующему голосованию, нажав кнопку Присоединиться",
+        reply_markup=MENU_KB
     )
+
+
+async def join_start_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.callback_query:
+        await update.callback_query.answer()
+        chat = update.callback_query.message
+    else:
+        chat = update.message
+        context.user_data["awaiting_join"] = True
+        await chat.reply_text("Введите номер голосования")
+
+
+async def handle_join_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Получаем номер опроса текстом
+    if not context.user_data.get("awaiting_join"):
+        return
+
+    text = update.message.text.strip()
+    if not text.isdigit():
+        await update.message.reply_text("Неверный ввод. Пожалуйста, введите число.")
+        return
+
+    poll_id = int(text)
+    context.user_data.pop("awaiting_join", None)
+    # перенаправляем в старую логику join, эмулируя args
+    context.args = [text]
+    await join(update, context)

@@ -16,13 +16,18 @@ def main() -> None:
     app = Application.builder().token(bot_token).build()
     app.add_handler(CommandHandler('start', handlers.start))
     # ОБРАБОТЧИК ДЛЯ КНОПКИ "Готово"
+    app.add_handler(MessageHandler(filters.PHOTO, handlers.handle_photo))
     app.add_handler(
         CallbackQueryHandler(handlers.done_callback, pattern=r'^done$')
     )
-    app.add_handler(MessageHandler(filters.PHOTO, handlers.handle_photo))
-    app.add_handler(CommandHandler('join', handlers.join))
+    # затем кнопка «Присоединиться»
+    app.add_handler(
+        MessageHandler(filters.Regex(r'^Присоединиться$'), handlers.join_start_callback)
+    )    # затем рейтинг
+    # ловим ввод номера опроса
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handlers.handle_join_input))
+    app.add_handler(CallbackQueryHandler(handlers.button, pattern=r'^rate:'))
     app.add_handler(CommandHandler('result', handlers.result))
-    app.add_handler(CallbackQueryHandler(handlers.button))
     app.run_polling()
 
 
