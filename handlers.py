@@ -1,5 +1,6 @@
 import logging
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup
+from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 
 from aggregation import aggregate_results
@@ -9,7 +10,7 @@ from models import BotState, Poll
 logger = logging.getLogger(__name__)
 state = BotState()
 
-MENU_KB = ReplyKeyboardMarkup([['Присоединиться']], resize_keyboard=True)
+MENU_KB = ReplyKeyboardMarkup([['Присоединиться', 'Узнать результат']], resize_keyboard=True)
 
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -71,8 +72,6 @@ async def done_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # показываем меню и первый вопрос
     lines = [f"{p.id}. {p.name}" for p in all_items]
     await query.message.reply_text(
-        "Меню распознано, голосование началось.\n" +
-        "\n".join(lines) +
         f"\n\nСоздано голосование номер #{poll_id}. Оцените пиццы от 1 до 5:"
     )
     await _send_next(update, context)
@@ -141,7 +140,11 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     pizza = poll.menu[index]
     context.user_data.setdefault("ratings", {})[pizza.id] = score
     context.user_data["index"] = index + 1
-    await query.edit_message_reply_markup(None)
+    try:
+        await query.edit_message_reply_markup(None)
+    except BadRequest:
+
+        pass
     await _send_next(update, context)
 
 
@@ -169,9 +172,10 @@ async def result(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Главное меню бота
     await update.message.reply_text(
-        "Добро пожаловать! Отправьте изображение меню для создания голосования. "
-        "Вы можете отправить несколько снимков по очереди. "
-        "Когда всё готово — нажмите кнопку «Готово». Также вы можете присоединиться к существующему голосованию, нажав кнопку Присоединиться",
+        "👋 Отправьте фото меню (можно несколько).\n"
+        "Когда всё готово — нажмите «Готово».\n\n"
+        "🗳 «Присоединиться» — вступить в голосование\n"
+        "📊 «Узнать результат» — посмотреть итоги",
         reply_markup=MENU_KB
     )
 
@@ -201,3 +205,29 @@ async def handle_join_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # перенаправляем в старую логику join, эмулируя args
     context.args = [text]
     await join(update, context)
+
+
+async def result_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    # ищем последний опрос, в котором участвует пользователь
+    poll_id = next(
+        (pid for pid in sorted(state.polls.keys(), reverse=True)
+         if user_id in state.polls[pid].participants),
+        None
+    )
+    if not poll_id:
+        await update.message.reply_text("Вы не участвуете ни в одном опросе.", reply_markup=MENU_KB)
+        return
+    poll = state.polls[poll_id]
+    # 1) сортируем меню по сумме голосов (от большего к меньшему)
+    sorted_items = sorted(
+        poll.menu,
+        key=lambda it: sum(poll.votes.get(it.id, {}).values()),
+        reverse=True
+    )
+    # 2) нумеруем уже в порядке ранжирования
+    lines = [f"Результаты опроса #{poll_id}:"] + [
+        f"{idx + 1}. {item.name} — {sum(poll.votes.get(item.id, {}).values())}"
+        for idx, item in enumerate(sorted_items)
+    ]
+    await update.message.reply_text("\n".join(lines), reply_markup=MENU_KB)

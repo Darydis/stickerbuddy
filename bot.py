@@ -23,7 +23,8 @@ def main() -> None:
     # затем кнопка «Присоединиться»
     app.add_handler(
         MessageHandler(filters.Regex(r'^Присоединиться$'), handlers.join_start_callback)
-    )    # затем рейтинг
+    )
+    app.add_handler(MessageHandler(filters.Regex(r'^Узнать результат$'), handlers.result_callback))
     # ловим ввод номера опроса
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handlers.handle_join_input))
     app.add_handler(CallbackQueryHandler(handlers.button, pattern=r'^rate:'))
