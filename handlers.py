@@ -27,6 +27,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ),
     )
 
+
 async def done_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -55,12 +56,25 @@ async def done_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # создаём опрос
     poll_id = state.next_poll_id
     state.next_poll_id += 1
-    state.polls[poll_id] = Poll(id=poll_id, menu=all_items)
+    poll = Poll(id=poll_id, menu=all_items)
+    state.polls[poll_id] = poll
 
+    # автоматически добавляем инициатора в участники и сразу начинаем голосование
+    user_id = query.from_user.id
+    poll.participants.add(user_id)
+    context.user_data["poll_id"] = poll_id
+    context.user_data["index"] = 0
+    context.user_data["ratings"] = {}
+
+    # показываем меню и первый вопрос
     lines = [f"{p.id}. {p.name}" for p in all_items]
     await query.message.reply_text(
-        f"Меню распознано. Номер голосования {poll_id}.\n" + "\n".join(lines)
+        "Меню распознано, голосование началось.\n" +
+        "\n".join(lines) +
+        f"\n\nСоздано голосование номер #{poll_id}. Оцените пиццы от 1 до 5:"
     )
+    await _send_next(update, context)
+
 
 async def join(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) != 1:
