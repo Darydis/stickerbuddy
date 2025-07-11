@@ -8,15 +8,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Prepare OpenAI client with proxy
 api_key = os.getenv("OPENAI_API_KEY")
-ihttpx = httpx.Client(
-    proxies={
-        "http://": "http://JuTqmCNApNGz7n:dzera.nat.i@216.107.136.148:42204",
-        "https://": "http://JuTqmCNApNGz7n:dzera.nat.i@216.107.136.148:42204",
-    },
-    trust_env=False
-)
+ihttpx = httpx.Client(trust_env=False)
+
 openai_client = openai.OpenAI(api_key=api_key, http_client=ihttpx)
 
 
