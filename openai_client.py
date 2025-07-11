@@ -20,8 +20,7 @@ async def ask_chatgpt(image_bytes):
     data_url = f"data:image/jpeg;base64,{b64}"
 
     prompt = (
-        "Распознай на изображении меню названия пицц. "
-        "Верни JSON-массив объектов {name: str}."
+        "В чем суть стикера? Объясни на английском учитывая российский контекст"
     )
     messages = [
         {"role": "system", "content": prompt},
@@ -38,7 +37,7 @@ async def ask_chatgpt(image_bytes):
     ]
     resp = await asyncio.to_thread(
         openai_client.chat.completions.create,
-        model="gpt-4.1-nano",
+        model="gpt-4o-mini",
         messages=messages,
         max_tokens=300,
         temperature=0,
