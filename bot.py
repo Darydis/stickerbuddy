@@ -15,7 +15,7 @@ class ReplyToStickerFilter(MessageFilter):
             and message.reply_to_message.sticker is not None
         )
 
-async def main() -> None:
+def main() -> None:
     load_dotenv()
     bot_token = os.getenv("BOT_TOKEN")
     if not bot_token:
@@ -27,7 +27,7 @@ async def main() -> None:
     app = Application.builder().token(bot_token).build()
 
     # узнаём username динамически
-    me = await app.bot.get_me()
+    me = app.bot.get_me()
     BOT_USERNAME = me.username  # без @
 
     private_sticker   = filters.ChatType.PRIVATE & filters.Sticker.ALL
@@ -41,7 +41,7 @@ async def main() -> None:
     app.add_handler(CommandHandler("start", handlers.start))
     app.add_handler(MessageHandler(sticker_or_mention, handlers.handle_sticker))
 
-    await app.run_polling()
+    app.run_polling()
 
 
 if __name__ == "__main__":
