@@ -59,9 +59,19 @@ def main() -> None:
 
     # фильтры
     private_sticker = filters.ChatType.PRIVATE & filters.Sticker.ALL
-    reply_sticker   = filters.ChatType.GROUP & filters.REPLY & ReplyToStickerFilter()
-    mention         = filters.ChatType.GROUP & filters.Regex(fr"@{bot_username}\b")
-    sticker_or_ment = private_sticker | reply_sticker | mention
+
+    reply_sticker_and_mention = (
+            filters.ChatType.GROUP  # в группе
+            & filters.REPLY  # это reply
+            & ReplyToStickerFilter()  # replied-сообщение — стикер
+            & filters.Regex(fr"@{bot_username}\b")  # есть @bot
+    )
+
+    mention_only = (
+            filters.ChatType.GROUP
+            & filters.Regex(fr"@{bot_username}\b")
+    )
+    sticker_or_ment = private_sticker | reply_sticker_and_mention | mention_only
 
     # хэндлеры
     app.add_handler(CommandHandler("start", handlers.start))
