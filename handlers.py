@@ -45,4 +45,4 @@ async def handle_sticker(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info("User %s started the bot", update.effective_user.id)
-    await update.message.reply_text("👋 Send me a sticker or reply to a sticker mentioning me.")
+    await update.message.reply_text("👋 Hi there! Send me a Russian-language sticker (not a GIF) or reply to a sticker mentioning me, and I’ll translate and explain it in English.")
