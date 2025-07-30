@@ -15,7 +15,7 @@ async def handle_sticker(update: Update, context: ContextTypes.DEFAULT_TYPE):
         sticker = msg.reply_to_message.sticker
 
     if sticker is None:                     # пришёл текст / фото / что-то ещё
-        await msg.reply_text("Где стикер? 🙂")
+        await msg.reply_text("Where’s the sticker? 🙂")
         return
 
     logger.info("Chat type: %s  |  user %s sent a sticker",
@@ -30,14 +30,14 @@ async def handle_sticker(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # ---------- сохраняем «в ожидании» (если нужно) ----------
     context.user_data.setdefault("pending_photos", []).append(img_bytes)
 
-    await msg.reply_text("Стикер получен, думаю...")
+    await msg.reply_text("Sticker received, thinking...")
 
     # ---------- отправляем на распознавание ----------
     try:
         result = await ask_chatgpt(img_bytes)
     except Exception as exc:
         logger.exception("ask_chatgpt failed: %s", exc)
-        await msg.reply_text("Не смог распознать 🤷‍♀️")
+        await msg.reply_text("Couldn’t recognize it 🤷‍♀️")
         return
 
     await msg.reply_text(result)
@@ -45,4 +45,4 @@ async def handle_sticker(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info("User %s started the bot", update.effective_user.id)
-    await update.message.reply_text("👋 Отправьте стикер или ответьте на стикер, упомянув меня.")
+    await update.message.reply_text("👋 Send me a sticker or reply to a sticker mentioning me.")
